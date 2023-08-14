@@ -16,9 +16,15 @@ const serverKeyPair = {
 }
 
 test.skip('e2e - http', async t => {
-  t.plan(6)
+  t.plan(8)
 
-  const webServer = http.createServer()
+  const webServer = http.createServer((req, res) => {
+    if (req.url === '/test') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      res.end('okay')
+      t.ok(true)
+    }
+  })
 
   const authServer = new HttpAuthServer(webServer, {
     onAuthz: (data, publicKey) => {
@@ -63,6 +69,10 @@ test.skip('e2e - http', async t => {
     t.alike(magicLinkRes, {
       url: 'https://example.com',
       validUntil: 1000
+    })
+
+    const req = http.get('http://localhost:8000/test', (res) => {
+      t.is(res.statusCode, 200)
     })
   })
 

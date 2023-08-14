@@ -46,10 +46,10 @@ const { HttpAuthClient, keyPair } = require('@slashtags/slashauth')
 
 const client = new HttpAuthClient({ keyPair, remotePublicKey })
 
-const response = await client.authz('<token>')
+const response = await client.authz(slashauthURL)
 // { status: "ok", resources: ['*'] }
 
-const link = await client.magiclik()
+const link = await client.magiclik(slashauthURL)
 // 'https://www.example.com?q=foobar'
 
 ```
