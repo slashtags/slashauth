@@ -2,8 +2,8 @@ const net = require('node:net')
 
 const { test } = require('brittle')
 
-const AuthServer = require('../src/server')
-const AuthClient = require('../src/client')
+const AuthServer = require('../src/netServer')
+const AuthClient = require('../src/netClient')
 
 const clientKeyPair = {
   publicKey: Buffer.from('681053c886e7d22700d5ecce520edf513db84de57b5d803376c3b6e7c71f6617', 'hex'),
@@ -13,17 +13,6 @@ const clientKeyPair = {
 const serverKeyPair = {
   publicKey: Buffer.from('4bbeef6a3fb07b2665ac3448f8daa035df76172c34b83cac00ac2ac1021cfdb8', 'hex'),
   secretKey: Buffer.from('7c2445a5b7d7d8fe0c541f0db0c52532911c7c4f50ede102591bec45f80b9fbe4bbeef6a3fb07b2665ac3448f8daa035df76172c34b83cac00ac2ac1021cfdb8', 'hex')
-}
-
-const authZres = {
-  status: 'ok',
-  message: 'test',
-  resources: ['foo', 'bar']
-}
-
-const magicLinkRes = {
-  url: 'https://example.com',
-  validUntil: 1000
 }
 
 test('AuthClient erorr handling', async t => {
@@ -105,23 +94,28 @@ test('AuthServer erorr handling', async t => {
   })
 })
 
-test('e2e', async t => {
+test('e2e - socket', async t => {
   t.plan(5)
 
   let authServer
   const netServer = net.createServer((socket) => {
     authServer = new AuthServer(socket, {
-      keyPair: serverKeyPair,
       onAuthz: (data, publicKey) => {
         t.is(data, 'hello')
         t.is(publicKey.toString('hex'), clientKeyPair.publicKey.toString('hex'))
 
-        return authZres
+        return {
+          status: 'ok',
+          resources: ['foo', 'bar']
+        }
       },
       onMagicLink: (publicKey) => {
         t.is(publicKey.toString('hex'), clientKeyPair.publicKey.toString('hex'))
 
-        return magicLinkRes
+        return {
+          url: 'https://example.com',
+          validUntil: 1000
+        }
       }
     }, { keyPair: serverKeyPair })
   })
@@ -135,12 +129,17 @@ test('e2e', async t => {
     })
 
     const authzRes = await authClient.authz('hello')
-    t.alike(authzRes, authZres)
+    t.alike(authzRes, {
+      status: 'ok',
+      message: null,
+      resources: ['foo', 'bar']
+    })
 
     const magicLinkRes = await authClient.magiclink()
-    t.alike(magicLinkRes, magicLinkRes)
-
-    socket.end()
+    t.alike(magicLinkRes, {
+      url: 'https://example.com',
+      validUntil: 1000
+    })
   })
 
   t.teardown(() => {

@@ -4,7 +4,7 @@ const ProtomuxRPC = require('protomux-rpc')
 const { authzOptions, magiclinkOptions } = require('./rpc-options.js')
 
 /**
- * AuthServer is a server for the auth client.
+ * NetAuthServer is a server for the auth client.
  * @param {net.Socket} socket - A socket to the auth client.
  * @param {Object} handlers - Handlers for the server.
  * @param {Function} handlers.onAuthz - A handler for authorization requests.
@@ -35,12 +35,13 @@ class AuthServer {
     if (options.keepAlive) stream.setKeepAlive(options.keepAlive)
 
     const rpc = new ProtomuxRPC(stream)
+
     rpc.respond('authz', authzOptions, data => handlers.onAuthz(data, stream.remotePublicKey))
     rpc.respond('magiclink', magiclinkOptions, _ => handlers.onMagicLink(stream.remotePublicKey))
   }
 
   /**
-   * close closes the server.
+   * close provided socket.
    * @returns {void}
    */
   close () {

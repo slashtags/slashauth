@@ -10,7 +10,53 @@ npm install @slashtags/slashauth
 
 ## Usage
 
-### Server side
+### HTTP
+
+#### Server side
+
+```js
+const { HttpAuthServer, keyPair } = require('@slashtags/slashauth')
+
+// create httpServer
+// create keyPair
+
+const authServer = new HttpAuthServer(server, {
+    onauthz: (token, remote) => {
+      // Check that token is valid, and remote isn't blocked
+      return { status: 'ok', resources: [] }
+    },
+    onmagiclink: (remote) => {
+        return 'https://www.example.com?q=foobar'
+    },
+    { keyPair },
+    'http://auth.example.com'
+})
+
+const slashauthURL = authServer.fromatURL(token)
+
+```
+
+#### Client side
+
+```js
+const { HttpAuthClient, keyPair } = require('@slashtags/slashauth')
+
+// create keyPair
+// use authServer's publicKey for pinning
+
+const client = new HttpAuthClient({ keyPair, remotePublicKey })
+
+const response = await client.authz('<token>')
+// { status: "ok", resources: ['*'] }
+
+const link = await client.magiclik()
+// 'https://www.example.com?q=foobar'
+
+```
+
+### TCP
+
+#### Server side
 
 ```js
 const { AuthServer, keyPair } = require('@slashtags/slashauth')
@@ -30,7 +76,7 @@ const server = new AuthServer(socket, {
 })
 ```
 
-### Client side
+#### Client side
 
 ```js
 const { AuthClient, keyPair } = require('@slashtags/slashauth')
@@ -45,5 +91,6 @@ const response = await client.authz('<token>')
 // { status: "ok", resources: ['*'] }
 
 const link = await client.magiclik()
+// 'https://www.example.com?q=foobar'
 
 ```

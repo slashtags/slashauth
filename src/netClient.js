@@ -3,7 +3,7 @@ const SecretStream = require('@hyperswarm/secret-stream')
 const ProtomuxRPC = require('protomux-rpc')
 
 /**
- * AuthClient is a client for the auth server.
+ * NetAuthClient is a client for the auth server.
  * @param {net.Socket} socket - A socket to the auth server.
  * @param {Object} opts - Options for the client.
  * @param {Object} opts.keyPair - A key pair for the client.
