@@ -16,7 +16,7 @@ const serverKeyPair = {
 }
 
 test('e2e - http', async t => {
-  t.plan(8)
+  t.plan(9)
 
   const webServer = http.createServer((req, res) => {
     if (req.url === '/test') {
@@ -71,8 +71,21 @@ test('e2e - http', async t => {
       validUntil: 1000
     })
 
-    const req = http.get('http://localhost:8000/test', (res) => {
+    http.get('http://localhost:8000/test', (res) => {
       t.is(res.statusCode, 200)
+    })
+
+    const connectReq = http.request({
+      protocol: 'http:',
+      host: 'localhost',
+      port: 8000,
+      path: '/test',
+      method: 'CONNECT'
+    })
+    connectReq.end()
+
+    connectReq.on('close', () => {
+      t.pass()
     })
   })
 

@@ -43,7 +43,7 @@ class HttpAuthClient {
    * @returns {Promise<IMagicLinkResponse>} A promise that resolves to a magic link object.
    */
   async magiclink (url) {
-    const { options, parsed } = this.urlToOptions(url)
+    const { options } = this.urlToOptions(url)
     const req = http.request(options)
     req.end()
 

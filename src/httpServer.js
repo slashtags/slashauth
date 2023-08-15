@@ -21,6 +21,7 @@ class HttpAuthServer {
         socket.write('HTTP/1.1 404 Not Found\r\n' +
           'Agent: SlashAuth\r\n' +
           '\r\n')
+
         socket.end()
         return
       }
