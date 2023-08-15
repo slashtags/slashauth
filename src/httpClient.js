@@ -20,14 +20,7 @@ class HttpAuthClient {
    * @returns {Promise<IAuthZResponse>} A promise that resolves to an authorization object.
    */
   async authz (url) {
-    const parsed = new URL(url)
-    const options = {
-      host: parsed.hostname,
-      port: parsed.port,
-      path: parsed.pathname,
-      method: 'CONNECT'
-    }
-
+    const { options, parsed } = this.urlToOptions(url)
     const req = http.request(options)
     req.end()
 
@@ -37,7 +30,10 @@ class HttpAuthClient {
       req.on('connect', (res, socket, upgradeHead) => {
         const authClient = new AuthClient(socket, this.opts)
 
-        authClient.authz(parsed.searchParams.get('token')).then(data => resolve(data))
+        authClient.authz(parsed.searchParams.get('token')).then((data) => {
+          resolve(data)
+          socket.destroy()
+        })
       })
     })
   }
@@ -47,14 +43,7 @@ class HttpAuthClient {
    * @returns {Promise<IMagicLinkResponse>} A promise that resolves to a magic link object.
    */
   async magiclink (url) {
-    const parsed = new URL(url)
-    const options = {
-      host: parsed.hostname,
-      port: parsed.port,
-      path: parsed.pathname,
-      method: 'CONNECT'
-    }
-
+    const { options, parsed } = this.urlToOptions(url)
     const req = http.request(options)
     req.end()
 
@@ -62,9 +51,25 @@ class HttpAuthClient {
       req.on('connect', (res, socket, upgradeHead) => {
         const authClient = new AuthClient(socket, this.opts)
 
-        authClient.magiclink().then(data => resolve(data))
+        authClient.magiclink().then((data) => {
+          resolve(data)
+          socket.destroy()
+        })
       })
     })
+  }
+
+  urlToOptions (url) {
+    const parsed = new URL(url)
+    const options = {
+      protocol: parsed.protocol,
+      host: parsed.hostname,
+      port: parsed.port,
+      path: parsed.pathname,
+      method: 'CONNECT'
+    }
+
+    return { options, parsed }
   }
 }
 

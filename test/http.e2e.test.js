@@ -15,7 +15,7 @@ const serverKeyPair = {
   secretKey: Buffer.from('7c2445a5b7d7d8fe0c541f0db0c52532911c7c4f50ede102591bec45f80b9fbe4bbeef6a3fb07b2665ac3448f8daa035df76172c34b83cac00ac2ac1021cfdb8', 'hex')
 }
 
-test.skip('e2e - http', async t => {
+test('e2e - http', async t => {
   t.plan(8)
 
   const webServer = http.createServer((req, res) => {
@@ -77,7 +77,7 @@ test.skip('e2e - http', async t => {
   })
 
   t.teardown(() => {
-    authServer.close()
     webServer.close()
+    authServer.close()
   })
 })
