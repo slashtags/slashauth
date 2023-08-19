@@ -22,7 +22,7 @@ class AuthClient {
       throw e
     }
 
-    this.rpc = new ProtomuxRPC(new SecretStream(true, socket, opts))
+    this.rpc = new ProtomuxRPC(socket)
   }
 
   /**

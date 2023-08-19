@@ -29,15 +29,11 @@ class AuthServer {
     }
 
     this.socket = socket
-    const stream = new SecretStream(false, socket, options)
 
-    if (options.timeout) stream.setTimeout(options.timeout)
-    if (options.keepAlive) stream.setKeepAlive(options.keepAlive)
+    const rpc = new ProtomuxRPC(this.socket)
 
-    const rpc = new ProtomuxRPC(stream)
-
-    rpc.respond('authz', authzOptions, data => handlers.onAuthz(data, stream.remotePublicKey))
-    rpc.respond('magiclink', magiclinkOptions, _ => handlers.onMagicLink(stream.remotePublicKey))
+    rpc.respond('authz', authzOptions, data => handlers.onAuthz(data))
+    rpc.respond('magiclink', magiclinkOptions, _ => handlers.onMagicLink())
   }
 
   /**
