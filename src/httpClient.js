@@ -1,4 +1,5 @@
-const http = require('http')
+const axios = require('axios')
+
 const AuthClient = require('./netClient')
 
 /**
@@ -21,8 +22,7 @@ class HttpAuthClient {
    */
   async authz (url) {
     const { options, parsed } = this.urlToOptions(url)
-    const req = http.request(options)
-    req.end()
+    const req = axios.request(options)
 
     return new Promise((resolve, reject) => {
       req.on('error', e => reject(e))
@@ -44,7 +44,7 @@ class HttpAuthClient {
    */
   async magiclink (url) {
     const { options } = this.urlToOptions(url)
-    const req = http.request(options)
+    const req = axios.request(options)
     req.end()
 
     return new Promise((resolve, reject) => {
