@@ -1,7 +1,5 @@
 # slashtags-auth
 
-P2P authorization and bidirectional authentication via [secret stream](https://github.com/holepunchto/hyperswarm-secret-stream) and [ProtomuxRPC](https://github.com/holepunchto/protomux-rpc).
-
 ## Installation
 
 ```bash
@@ -15,82 +13,62 @@ npm install @slashtags/slashauth
 #### Server side
 
 ```js
-const { HttpAuthServer, keyPair } = require('@slashtags/slashauth')
+const { AuthServer, crypto } = require('@slashtags/slashauth')
 
-// create httpServer
 // create keyPair
+const keyPair = crypto.createKeyPair()
 
-const authServer = new HttpAuthServer(server, {
-    onauthz: (token, remote) => {
-      // Check that token is valid, and remote isn't blocked
-      return { status: 'ok', resources: [] }
-    },
-    onmagiclink: (remote) => {
-        return 'https://www.example.com?q=foobar'
-    },
-    { keyPair },
-    'http://auth.example.com'
-})
+const authz = ({ publicKey, token, signature }) => {
+  // NOTE: by the moment this method will be called signature will alreayd be verified
+  return {
+    status: 'ok',
+    token: 'Bearer 123'
+  }
+}
 
-const slashauthURL = authServer.fromatURL(token)
+const magiclink = (publicKey) => {
+  // NOTE: by the moment this method will be called signature will alreayd be verified
+  return {
+    status: 'ok',
+    ml: 'http://localhost:8000/v0.1/users/123'
+  }
+}
+
+  const server = new SlashAuthServer({
+    authz,
+    magiclink,
+    keypair
+    // sv - object with sign(data, secretKey) and verify(signature, data, publicKey) methods
+    // storage - storage for <pK>: <nonce> pairs with methods (default Map)
+    //    - async set(publicKey, token)
+    //    - async get(publicKey)
+    //    - async delete(publicKey)
+    // port - to run server on (default 8000)
+    // host - to run server on (default localhost)
+    // route - route for auth (default auth)
+    // version - version of auth (default v0.1)
+  })
+
+  await server.start()
+
+const slashauthURL = server.fromatURL(token)
 
 ```
 
 #### Client side
 
 ```js
-const { HttpAuthClient, keyPair } = require('@slashtags/slashauth')
+const { AuthClient, crypto } = require('@slashtags/slashauth')
 
 // create keyPair
+const keyPair = crypto.createKeyPair()
 // use authServer's publicKey for pinning
-
 const client = new HttpAuthClient({ keyPair, remotePublicKey })
 
 const response = await client.authz(slashauthURL)
-// { status: "ok", resources: ['*'] }
+// { status: 'ok', token: 'Bearer 123' }
 
 const link = await client.magiclik(slashauthURL)
-// 'https://www.example.com?q=foobar'
-
-```
-
-### TCP
-
-#### Server side
-
-```js
-const { AuthServer, keyPair } = require('@slashtags/slashauth')
-
-// create net.Socket
-// create keyPair
-
-const server = new AuthServer(socket, {
-    onauthz: (token, remote) => {
-      // Check that token is valid, and remote isn't blocked
-      return { status: 'ok', resources: [] }
-    },
-    onmagiclink: (remote) => {
-        return 'https://www.example.com?q=foobar'
-    },
-    { keyPair }
-})
-```
-
-#### Client side
-
-```js
-const { AuthClient, keyPair } = require('@slashtags/slashauth')
-
-// create net.Socket to auth url
-// create keyPair
-// use authServer's publicKey for pinning
-
-const client = new AuthClient(socket, { keyPair, remotePublicKey })
-
-const response = await client.authz('<token>')
-// { status: "ok", resources: ['*'] }
-
-const link = await client.magiclik()
-// 'https://www.example.com?q=foobar'
+// { status: 'ok', ml: 'https://www.example.com?q=foobar' }
 
 ```

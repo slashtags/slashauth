@@ -1,24 +1,63 @@
-export = AuthClient;
+export = SlashAuthClient;
 /**
- * AuthClient is a client for the auth server.
- * @param {net.Socket} socket - A socket to the auth server.
- * @param {Object} opts - Options for the client.
- * @param {Object} opts.keyPair - A key pair for the client.
- * @param {Buffer} opts.remotePublicKey - The public key of the auth server.
- * @returns {AuthClient} An AuthClient instance.
+ * SlashAuthClient
+ * @param {object} opts
+ * @param {object} opts.keypair - keypair
+ * @param {string|buffer} opts.keypair.publicKey - public key
+ * @param {string|buffer} opts.keypair.secretKey - secret key
+ * @param {string|buffer} opts.serverPublicKey - server public key
+ * @param {object} opts.sv
+ * @param {function} opts.sv.sign - sign function
+ * @param {function} opts.sv.verify - verify function
+ * @returns {object}
  */
-declare class AuthClient {
-    constructor(socket: any, opts: any);
-    rpc: any;
+declare class SlashAuthClient {
+    constructor(opts?: {});
+    keypair: any;
+    serverPublicKey: any;
+    sv: any;
     /**
-     * authz requests authorization for a token.
-     * @param {string} token - A token to authorize.
-     * @returns {Promise<IAuthZResponse>} A promise that resolves to an authorization object.
+     * Authenticate and authorize a user using signature of server generated nonce
+     * @param {string} url
+     * @returns {object}
+     * @throws {Error} Invalid signature
+     * @throws {Error} Invalid token
+     * @throws {Error} No url
+     * @throws {Error} No signature in response
+     * @throws {Error} No result in response
      */
-    authz(token: string): Promise<IAuthZResponse>;
+    authz(url: string): object;
     /**
-     * magiclink requests a magic link.
-     * @returns {Promise<IMagicLinkResponse>} A promise that resolves to a magic link object.
+     * Authenticate and authorize a user using magiclink
+     * @param {string} url
+     * @returns {object}
+     * @throws {Error} Invalid signature
+     * @throws {Error} Invalid token
+     * @throws {Error} No url
+     * @throws {Error} No signature in response
+     * @throws {Error} No result in response
      */
-    magiclink(): Promise<IMagicLinkResponse>;
+    magiclink(url: string): object;
+    /**
+     * Request a token from the server
+     * @param {string} url
+     * @returns {object}
+     * @throws {Error} Invalid signature
+     * @throws {Error} Invalid token
+     * @throws {Error} No url
+     * @throws {Error} No signature in response
+     * @throws {Error} No result in response
+     */
+    requestToken(url: string): object;
+    /**
+     * Process response
+     * @param {object} body
+     * @returns {object}
+     * @throws {Error} Invalid signature
+     * @throws {Error} Invalid token
+     * @throws {Error} No signature in response
+     * @throws {Error} No result in response
+     * @throws {Error} No url
+     */
+    processResponse(body: object): object;
 }

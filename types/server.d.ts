@@ -1,22 +1,69 @@
-export = AuthServer;
+export = SlashAuthServer;
 /**
- * AuthServer is a server for the auth client.
- * @param {net.Socket} socket - A socket to the auth client.
- * @param {Object} handlers - Handlers for the server.
- * @param {Function} handlers.onAuthz - A handler for authorization requests.
- * @param {Function} handlers.onMagicLink - A handler for magic link requests.
- * @param {Object} opts - Options for the server.
- * @param {Object} opts.keyPair - A key pair for the server.
- * @param {number} [opts.timeout] - A timeout for the server.
- * @param {number} [opts.keepAlive] - A keep alive for the server.
- * @returns {AuthServer} An AuthServer instance.
+ * SlashAuthServer
+ * @param {object} opts
+ * @param {object} opts.keypair - keypair
+ * @param {string} opts.keypair.publicKey - public key
+ * @param {string} opts.keypair.secretKey - secret key
+ * @param {function} opts.authz - authz function
+ * @param {function} opts.magiclink - magiclink function
+ * @param {object} [opts.storage] - storage with (get, set, delete) methods
+ * @param {object} [opts.sv] - signature verification object
+ * @param {number} [opts.port] - rpc port
+ * @param {string} [opts.host] - rpc host
+ * @param {string} [opts.route] - rpc route
+ * @param {string} [opts.version] - rpc version
+ * @returns {SlashAuthServer}
  */
-declare class AuthServer {
-    constructor(socket: any, handlers: any, options?: {});
-    socket: any;
+declare class SlashAuthServer {
+    constructor(opts?: {});
+    authz: any;
+    magiclink: any;
+    keypair: any;
+    tokens: any;
+    sv: any;
+    rpc: {
+        port: any;
+        host: any;
+        route: any;
+        version: any;
+        endpointList: {
+            name: string;
+            svc: string;
+            description: string;
+        }[];
+        handler: (ctx: any) => any;
+    };
+    server: any;
     /**
-     * close closes the server.
-     * @returns {void}
+     * Get url to rpc server
+     * @param {string} token
+     * @returns {string}
      */
-    close(): void;
+    formatUrl(token: string): string;
+    /**
+     * Start rpc server
+     * @returns {Promise<void>}
+     */
+    start(): Promise<void>;
+    /**
+     * Stop rpc server
+     * @returns {Promise<void>}
+     */
+    stop(): Promise<void>;
+    /**
+     * Get token by public key
+     * @param {string} publicKey
+     * @returns {string}
+     */
+    requestToken(publicKey: string): string;
+    /**
+     * Verify token
+     * @param {object} opts
+     * @property {string} opts.publicKey
+     * @property {string} opts.token
+     * @returns {Promise<void>}
+     * @throws {Error} Invalid token
+     */
+    verifyToken({ publicKey, token }: object): Promise<void>;
 }
