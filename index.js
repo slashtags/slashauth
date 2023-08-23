@@ -1,13 +1,9 @@
-const AuthServer = require('./src/netServer')
-const AuthClient = require('./src/netClient')
-const HttpAuthClient = require('./src/httpClient')
-const HttpAuthServer = require('./src/httpServer')
-const keyPair = require('./src/keyPair')
+const SlashAuthServer = require('./src/server')
+const SlashAuthClient = require('./src/client')
+const crypto = require('./src/crypto')
 
 module.exports = {
-  AuthServer,
-  AuthClient,
-  HttpAuthClient,
-  HttpAuthServer,
-  keyPair
+  SlashAuthServer,
+  SlashAuthClient,
+  crypto
 }
