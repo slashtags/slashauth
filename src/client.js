@@ -4,7 +4,6 @@ const headers = {
   'Content-Type': 'application/json'
 }
 
-
 const sv = {
   /**
    * Sign data with secret key
