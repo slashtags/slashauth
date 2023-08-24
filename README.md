@@ -63,7 +63,7 @@ const { AuthClient, crypto } = require('@slashtags/slashauth')
 // create keyPair
 const keyPair = crypto.createKeyPair()
 // use authServer's publicKey for pinning
-const client = new HttpAuthClient({ keyPair, remotePublicKey })
+const client = new AuthClient({ keyPair, remotePublicKey })
 
 const response = await client.authz(slashauthURL)
 // { status: 'ok', token: 'Bearer 123' }
