@@ -2,7 +2,7 @@ const { test } = require('brittle')
 
 const { SlashAuthServer, crypto } = require('../index')
 
-const { SlashAuthClient } = require("@slashtags/slashauth-client")
+const { SlashAuthClient } = require('@slashtags/slashauth-client')
 
 const serverKeyPair = crypto.createKeyPair()
 const clientKeyPair = crypto.createKeyPair()
