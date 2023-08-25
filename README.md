@@ -57,8 +57,10 @@ const slashauthURL = server.fromatURL(token)
 
 #### Client side
 
+See https://github.com/slashtags/slashauth-client
+
 ```js
-const { AuthClient, crypto } = require('@slashtags/slashauth')
+const { AuthClient, crypto } = require('@slashtags/slashauth-client')
 
 // create keyPair
 const keyPair = crypto.createKeyPair()
