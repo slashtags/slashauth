@@ -1,6 +1,8 @@
 const { RPC } = require('slashtags-server')
 const { createToken } = require('./crypto.js')
 
+const SlashtagsURL = require('@synonymdev/slashtags-url')
+
 const endpointList = [
   {
     name: 'authz',
@@ -165,12 +167,10 @@ class SlashAuthServer {
    * @returns {string}
    */
   formatUrl (token) {
-    const url = new URL(`http://${this.rpc.host}`)
-    url.port = this.rpc.port
-    url.pathname = `/${this.rpc.version}/${this.rpc.route}`
-    url.search = `token=${token}`
-
-    return url.toString()
+    return SlashtagsURL.format(this.keypair.publicKey, {
+      path: `/${this.rpc.version}/${this.rpc.route}`,
+      query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`
+    })
   }
 
   /**
