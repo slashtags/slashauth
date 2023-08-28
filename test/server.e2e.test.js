@@ -1,14 +1,16 @@
 const { test } = require('brittle')
+const SlashtagsURL = require('@synonymdev/slashtags-url')
 
 const { SlashAuthServer, crypto } = require('../index')
 
 const { SlashAuthClient } = require('@slashtags/slashauth-client')
 
+
 const serverKeyPair = crypto.createKeyPair()
 const clientKeyPair = crypto.createKeyPair()
 
 test('e2e server', async t => {
-  t.plan(8)
+  t.plan(11)
 
   const authz = ({ publicKey, token, signature }) => {
     t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
@@ -44,6 +46,12 @@ test('e2e server', async t => {
   })
 
   const magicLinkUrl = server.formatUrl('testtoken')
+
+  const parsed = SlashtagsURL.parse(magicLinkUrl)
+  t.is(parsed.query.token, 'testtoken')
+  t.is(parsed.query.relay, `http://${server.rpc.host}:${server.rpc.port}`)
+  t.is(parsed.path, `/${server.rpc.version}/${server.rpc.route}`)
+
   const authzRes = await client.authz(magicLinkUrl)
 
   t.is(authzRes.status, 'ok')
