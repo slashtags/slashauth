@@ -1,10 +1,7 @@
 const { test } = require('brittle')
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
-const { SlashAuthServer, crypto } = require('../index')
-
-const { SlashAuthClient } = require('@slashtags/slashauth-client')
-
+const { SlashAuthServer, SlashAuthClient, crypto } = require('../index')
 
 const serverKeyPair = crypto.createKeyPair()
 const clientKeyPair = crypto.createKeyPair()
@@ -44,6 +41,7 @@ test('e2e server', async t => {
     keypair: clientKeyPair,
     serverPublicKey: serverKeyPair.publicKey
   })
+
 
   const magicLinkUrl = server.formatUrl('testtoken')
 

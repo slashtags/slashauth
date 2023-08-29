@@ -3,6 +3,11 @@ const { createToken } = require('./crypto.js')
 
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
+const Noise = require('noise-handshake')
+const Cipher = require('noise-handshake/cipher')
+
+const prologue = Buffer.alloc(0) // prologue is just a well-known value.
+
 const endpointList = [
   {
     name: 'authz',
@@ -18,6 +23,11 @@ const endpointList = [
     name: 'requestToken',
     svc: 'SlashAuthServer.requestToken',
     description: 'Requst a nonce associated with user\'s public key'
+  },
+  {
+    name: 'handshake',
+    svc: 'SlashAuthServer.handshake',
+    description: 'Handshake'
   }
 ]
 
@@ -59,13 +69,16 @@ const handlersWrappers = {
    * @throws {Error} Invalid token
    */
   authz: async function ({ publicKey, token, signature, nonce }) {
+    // XXX decrypt
     this.sv.verify(signature, `${nonce}:${token}`, publicKey)
 
     const result = await this.authz({ publicKey, token, signature })
     result.nonce = nonce
+    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
       result,
+      encrypted,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
   },
@@ -80,12 +93,16 @@ const handlersWrappers = {
    * @throws {Error} Invalid token
    */
   requestToken: async function ({ publicKey, nonce, signature }) {
+    // XXX decrypt
     this.sv.verify(signature, `${nonce}:${publicKey}`, publicKey)
     const result = await this.requestToken(publicKey)
     result.nonce = nonce
 
+    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
+
     return {
       result,
+      encrypted,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
   },
@@ -101,10 +118,27 @@ const handlersWrappers = {
    * @throws {Error} Invalid token
    */
   magiclink: async function ({ publicKey, token, nonce, signature }) {
+    // XXX decrypt
     this.sv.verify(signature, `${nonce}:${token}`, publicKey)
     this.verifyToken({ publicKey, token })
 
     const result = await this.magiclink(publicKey)
+    result.nonce = nonce
+
+    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
+
+    return {
+      result,
+      encrypted,
+      signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
+    }
+  },
+
+  handshake: async function ({ publicKey, handshakeMessage, nonce, signature }) {
+    // XXX decrypt
+    this.sv.verify(signature, `${nonce}:${handshakeMessage}`, publicKey)
+
+    const result = await this.handshake(handshakeMessage, nonce)
     result.nonce = nonce
 
     return {
@@ -159,6 +193,8 @@ class SlashAuthServer {
     }
 
     this.server = null
+
+    this.responder = new Noise('IK', false)//, this.keypair)
   }
 
   /**
@@ -169,7 +205,7 @@ class SlashAuthServer {
   formatUrl (token) {
     return SlashtagsURL.format(this.keypair.publicKey, {
       path: `/${this.rpc.version}/${this.rpc.route}`,
-      query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`
+      query: `token=${token}&hk=${this.responder.s.publicKey.toString('hex')}&relay=http://${this.rpc.host}:${this.rpc.port}`
     })
   }
 
@@ -217,6 +253,18 @@ class SlashAuthServer {
     await this.tokenStorage.delete(publicKey)
 
     if (storedToken !== token) throw new Error('invalid token')
+  }
+
+  async handshake (message, nonce) {
+    this.responder.initialise(Buffer.from('a')) // prologue === client set nonce?
+    this.responder.recv(Buffer.from(message, 'hex'))
+
+    const handshakeMessage = this.responder.send()
+
+    this.enc = new Cipher(this.responder.rx)
+    this.dec = new Cipher(this.responder.tx)
+
+    return { handshakeMessage: handshakeMessage.toString('hex') }
   }
 }
 
