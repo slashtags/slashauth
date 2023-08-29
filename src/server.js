@@ -3,12 +3,6 @@ const { createToken } = require('./crypto.js')
 
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
-const Noise = require('noise-handshake')
-const Cipher = require('noise-handshake/cipher')
-const curve = require('noise-curve-ed')
-
-const prologue = Buffer.alloc(0)
-
 const endpointList = [
   {
     name: 'authz',
@@ -28,50 +22,20 @@ const handlersWrappers = {
    * @param {object} params
    * @param {string} params.publicKey
    * @param {string} params.token
-   * @param {string} params.signature
    * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
    */
-  authz: async function (encryptedRequest) {
-    const responder = new Noise('IK', false, this.keypair, { curve })
-    responder.initialise(prologue)
-
-    const payload = JSON.parse(responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-
-    const { publicKey, token } = payload
-    const result = await this.authz({ publicKey, token })
-
-    const encrypted = responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
-
-    return {
-      encrypted,
-    }
+  authz: async function ({ publicKey, token}) {
+    return await this.authz({ publicKey, token })
   },
 
   /**
    * Requst a nonce associated with user's public key
    * @param {object} params
    * @param {string} params.publicKey
-   * @param {string} params.token
-   * @param {string} params.signature
    * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
    */
-  magiclink: async function (encryptedRequest) {
-    const responder = new Noise('IK', false, this.keypair, { curve })
-    responder.initialise(prologue)
-
-    const payload = JSON.parse(responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey } = payload
-
-    const result = await this.magiclink(publicKey)
-    const encrypted = responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
-
-    return {
-      encrypted,
-    }
+  magiclink: async function ({ publicKey }) {
+    return await this.magiclink(publicKey)
   }
 }
 
@@ -83,8 +47,6 @@ const handlersWrappers = {
  * @param {string} opts.keypair.secretKey - secret key
  * @param {function} opts.authz - authz function
  * @param {function} opts.magiclink - magiclink function
- * @param {object} [opts.storage] - storage with (get, set, delete) methods
- * @param {object} [opts.sv] - signature verification object
  * @param {number} [opts.port] - rpc port
  * @param {string} [opts.host] - rpc host
  * @param {string} [opts.route] - rpc route
@@ -101,8 +63,6 @@ class SlashAuthServer {
     this.magiclink = opts.magiclink
 
     this.keypair = opts.keypair
-
-    this.tokenStorage = opts.storage || new Map()
 
     this.rpc = {
       port: opts.port || 8000,
@@ -129,7 +89,6 @@ class SlashAuthServer {
   formatUrl (token) {
     return SlashtagsURL.format(this.keypair.publicKey, {
       path: `/${this.rpc.version}/${this.rpc.route}`,
-      // FXIME: https
       query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`
     })
   }
@@ -139,7 +98,7 @@ class SlashAuthServer {
    * @returns {Promise<void>}
    */
   async start () {
-    this.server = new RPC({ rpc: this.rpc })
+    this.server = new RPC({ rpc: this.rpc, keypair: this.keypair })
     return await this.server.start()
   }
 

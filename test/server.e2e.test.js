@@ -1,10 +1,11 @@
 const { test } = require('brittle')
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
-const { SlashAuthServer, SlashAuthClient, crypto } = require('../index')
+const { SlashAuthServer, SlashAuthClient } = require('../index')
+const curve = require('noise-curve-ed')
 
-const serverKeyPair = crypto.createKeyPair()
-const clientKeyPair = crypto.createKeyPair()
+const serverKeyPair = curve.generateKeyPair()
+const clientKeyPair = curve.generateKeyPair()
 
 test('e2e server - az', async t => {
   t.plan(7)
@@ -105,7 +106,7 @@ test('e2e server - ml', async t => {
   })
 })
 
-test('e2e server - alll', async t => {
+test('e2e server - all', async t => {
   t.plan(7)
 
   const authz = ({ publicKey, token, signature }) => {

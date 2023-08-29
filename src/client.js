@@ -16,10 +16,6 @@ const headers = { 'Content-Type': 'application/json' }
  * @param {string|buffer} opts.keypair.publicKey - public key
  * @param {string|buffer} opts.keypair.secretKey - secret key
  * @param {string|buffer} opts.serverPublicKey - server public key
- * @param {object} opts.sv
- * @param {function} opts.sv.sign - sign function
- * @param {function} opts.sv.verify - verify function
- * @param {function} opts.sv.createToken - createToken function
  * @returns {object}
  */
 class SlashAuthClient {
@@ -35,56 +31,31 @@ class SlashAuthClient {
    * Authenticate and authorize a user using signature of server generated nonce
    * @param {string} url
    * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
    * @throws {Error} No url
-   * @throws {Error} No signature in response
-   * @throws {Error} No result in response
    */
   async authz (url) {
     if (!url) throw new Error('No url')
 
     const parsed = new URL(url)
 
-    const token = parsed.searchParams.get('token')
-    const params = this.createRequestParams({ token })
-
-    return this.sendRequest('authz', url, params)
+    return this.sendRequest('authz', url, {
+      token: parsed.searchParams.get('token'),
+      publicKey: this.keypair.publicKey.toString('hex'),
+    })
   }
 
   /**
    * Authenticate and authorize a user using magiclink
    * @param {string} url
    * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
    * @throws {Error} No url
-   * @throws {Error} No signature in response
-   * @throws {Error} No result in response
    */
   async magiclink (url) {
     if (!url) throw new Error('No url')
 
-    const params = this.createRequestParams({ })
-
-    return this.sendRequest('magiclink', url, params)
-  }
-
-  /**
-   * Process response
-   * @param {object} body
-   * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
-   * @throws {Error} No signature in response
-   * @throws {Error} No result in response
-   * @throws {Error} No url
-   */
-  processResponse (body) {
-    if (body.error) throw new Error(body.error.message)
-    if (!body.result.result) throw new Error('No result in response')
-
-    return body.result.result
+    return this.sendRequest('magiclink', url, {
+      publicKey: this.keypair.publicKey.toString('hex'),
+    })
   }
 
   /**
@@ -108,23 +79,10 @@ class SlashAuthClient {
     })
 
     let body = await res.json()
-    if (!body.error) {
-      body.result.result = JSON.parse(initiator.recv(Buffer.from(body.result.encrypted, 'hex')).toString())
-    }
+    if (body.error) throw new Error(body.error.message)
+    if (!body.result) throw new Error('No result in response')
 
-    return this.processResponse(body)
-  }
-
-  /**
-   * Create request params
-   * @param {object} param
-   * @returns {object}
-   */
-  createRequestParams (param = {}) {
-    return {
-      ...param,
-      publicKey: this.keypair.publicKey.toString('hex'),
-    }
+    return JSON.parse(initiator.recv(Buffer.from(body.result, 'hex')).toString())
   }
 }
 

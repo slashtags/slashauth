@@ -18,7 +18,7 @@ const { AuthServer, crypto } = require('@slashtags/slashauth')
 // create keyPair
 const keyPair = crypto.createKeyPair()
 
-const authz = ({ publicKey, token, signature }) => {
+const authz = ({ publicKey, token }) => {
   // NOTE: by the moment this method will be called signature will alreayd be verified
   return {
     status: 'ok',
@@ -26,7 +26,7 @@ const authz = ({ publicKey, token, signature }) => {
   }
 }
 
-const magiclink = (publicKey) => {
+const magiclink = ({ publicKey }) => {
   // NOTE: by the moment this method will be called signature will alreayd be verified
   return {
     status: 'ok',
@@ -38,11 +38,6 @@ const magiclink = (publicKey) => {
     authz,
     magiclink,
     keypair
-    // sv - object with sign(data, secretKey) and verify(signature, data, publicKey) methods
-    // storage - storage for <pK>: <nonce> pairs with methods (default Map)
-    //    - async set(publicKey, token)
-    //    - async get(publicKey)
-    //    - async delete(publicKey)
     // port - to run server on (default 8000)
     // host - to run server on (default localhost)
     // route - route for auth (default auth)
