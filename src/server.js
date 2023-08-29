@@ -7,7 +7,7 @@ const Noise = require('noise-handshake')
 const Cipher = require('noise-handshake/cipher')
 const curve = require('noise-curve-ed')
 
-const prologue = Buffer.alloc(0) // prologue is just a well-known value.
+const prologue = Buffer.alloc(0)
 
 const endpointList = [
   {
@@ -22,32 +22,6 @@ const endpointList = [
   },
 ]
 
-const sv = {
-  /**
-   * Sign data with secret key
-   * @param {string|buffer} data
-   * @param {string|buffer} secretKey
-   * @returns {string}
-   */
-  sign: function (data, secretKey) {
-    return require('./crypto').sign(data, secretKey)
-  },
-
-  /**
-   * Verify signature
-   * @param {string} signature
-   * @param {string|buffer} data
-   * @param {string|buffer} publicKey
-   * @returns {boolean}
-   * @throws {Error} Invalid signature
-   */
-  verify: function (signature, data, publicKey) {
-    if (require('./crypto').verify(signature, data, publicKey)) return
-
-    throw new Error('Invalid signature')
-  }
-}
-
 const handlersWrappers = {
   /**
    * Authenticate and authorize a user using signature server generated nonce
@@ -60,18 +34,18 @@ const handlersWrappers = {
    * @throws {Error} Invalid token
    */
   authz: async function (encryptedRequest) {
-    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
+    const responder = new Noise('IK', false, this.keypair, { curve })
+    responder.initialise(prologue)
 
-    const { publicKey, token, signature } = payload
-    this.sv.verify(signature, `${token}`, publicKey)
+    const payload = JSON.parse(responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
 
-    const result = await this.authz({ publicKey, token, signature })
+    const { publicKey, token } = payload
+    const result = await this.authz({ publicKey, token })
 
-    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
+    const encrypted = responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
       encrypted,
-      signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
   },
 
@@ -86,18 +60,17 @@ const handlersWrappers = {
    * @throws {Error} Invalid token
    */
   magiclink: async function (encryptedRequest) {
-    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey, signature } = payload
+    const responder = new Noise('IK', false, this.keypair, { curve })
+    responder.initialise(prologue)
 
-    //this.sv.verify(signature, `${token}`, publicKey)
+    const payload = JSON.parse(responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
+    const { publicKey } = payload
 
     const result = await this.magiclink(publicKey)
-
-    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
+    const encrypted = responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
       encrypted,
-      signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
   }
 }
@@ -130,11 +103,6 @@ class SlashAuthServer {
     this.keypair = opts.keypair
 
     this.tokenStorage = opts.storage || new Map()
-
-    this.responder = new Noise('IK', false, this.keypair, { curve })
-    this.responder.initialise(prologue)
-
-    this.sv = opts.sv || sv
 
     this.rpc = {
       port: opts.port || 8000,
@@ -181,23 +149,6 @@ class SlashAuthServer {
    */
   async stop () {
     await this.server?.stop()
-  }
-
-  /**
-   * Verify token
-   * @param {object} opts
-   * @property {string} opts.publicKey
-   * @property {string} opts.token
-   * @returns {Promise<void>}
-   * @throws {Error} Invalid token
-   */
-  async verifyToken ({ publicKey, token }) {
-    if (!token) throw new Error('invalid token')
-
-    const storedToken = await this.tokenStorage.get(publicKey)
-    await this.tokenStorage.delete(publicKey)
-
-    if (storedToken !== token) throw new Error('invalid token')
   }
 }
 

@@ -5,44 +5,9 @@ const Noise = require('noise-handshake')
 const Cipher = require('noise-handshake/cipher')
 const curve = require('noise-curve-ed')
 
-const prologue = Buffer.alloc(0) // prologue is just a well-known value.
+const prologue = Buffer.alloc(0)
 
-const headers = {
-  'Content-Type': 'application/json'
-}
-
-const sv = {
-  /**
-   * Sign data with secret key
-   * @param {string|buffer} data
-   * @param {string|buffer} secretKey
-   * @returns {string}
-   */
-  sign: function (data, secretKey) {
-    return require('./crypto').sign(data, secretKey)
-  },
-  /**
-   * Verify signature
-   * @param {string} signature
-   * @param {string|buffer} data
-   * @param {string|buffer} publicKey
-   * @returns {boolean}
-   * @throws {Error} Invalid signature
-   */
-  verify: function (signature, data, publicKey) {
-    if (require('./crypto').verify(signature, data, publicKey)) return
-
-    throw new Error('Invalid signature')
-  },
-
-  /**
-   * Generate token
-   * @returns {string}
-   */
-  createToken: function () {
-    return require('./crypto').createToken()
-  }
-}
+const headers = { 'Content-Type': 'application/json' }
 
 /**
  * SlashAuthClient
@@ -64,10 +29,6 @@ class SlashAuthClient {
 
     this.keypair = opts.keypair
     this.serverPublicKey = opts.serverPublicKey
-    this.sv = opts.sv || sv
-
-//    this.enc = null
-//    this.dec = null
   }
 
   /**
@@ -121,14 +82,7 @@ class SlashAuthClient {
    */
   processResponse (body) {
     if (body.error) throw new Error(body.error.message)
-    if (!body.result.signature) throw new Error('No signature in response')
     if (!body.result.result) throw new Error('No result in response')
-
-    this.sv.verify(
-      body.result.signature,
-      JSON.stringify(body.result.result),
-      this.serverPublicKey
-    )
 
     return body.result.result
   }
@@ -144,7 +98,6 @@ class SlashAuthClient {
     const initiator = new Noise('IK', true, this.keypair, { curve })
     const parsed = SlashtagsURL.parse(url)
 
-    //initiator.initialise(prologue, Buffer.from(parsed.query.hk, 'hex'))
     initiator.initialise(prologue, this.serverPublicKey)
     const payload = initiator.send(Buffer.from(JSON.stringify(params))).toString('hex')
 
@@ -168,12 +121,9 @@ class SlashAuthClient {
    * @returns {object}
    */
   createRequestParams (param = {}) {
-    const data = Object.values(param)[0]
-    const signature = this.sv.sign(`${data}`, this.keypair.secretKey)
     return {
       ...param,
       publicKey: this.keypair.publicKey.toString('hex'),
-      signature
     }
   }
 }
