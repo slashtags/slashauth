@@ -1,7 +1,8 @@
 const { test } = require('brittle')
 const SlashtagsURL = require('@synonymdev/slashtags-url')
+const { SlashAuthClient } = require('@slashtags/slashauth-client')
 
-const { SlashAuthServer, SlashAuthClient } = require('../index')
+const { SlashAuthServer } = require('../index')
 const curve = require('noise-curve-ed')
 
 const serverKeyPair = curve.generateKeyPair()
