@@ -23,11 +23,6 @@ const endpointList = [
     name: 'requestToken',
     svc: 'SlashAuthServer.requestToken',
     description: 'Requst a nonce associated with user\'s public key'
-  },
-  {
-    name: 'handshake',
-    svc: 'SlashAuthServer.handshake',
-    description: 'Handshake'
   }
 ]
 
@@ -68,13 +63,16 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  authz: async function ({ publicKey, token, signature, nonce }) {
-    // XXX decrypt
+  authz: async function (encryptedRequest) {
+    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
+
+    const { publicKey, token, signature, nonce } = payload
     this.sv.verify(signature, `${nonce}:${token}`, publicKey)
 
     const result = await this.authz({ publicKey, token, signature })
     result.nonce = nonce
-    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
+
+    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
       result,
@@ -92,13 +90,23 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  requestToken: async function ({ publicKey, nonce, signature }) {
-    // XXX decrypt
+  requestToken: async function (encryptedRequest) {
+    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
+    const { publicKey, nonce, signature } = payload
+
     this.sv.verify(signature, `${nonce}:${publicKey}`, publicKey)
     const result = await this.requestToken(publicKey)
     result.nonce = nonce
 
-    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
+
+    const newResponder = new Noise('IK', false)//, this.keypair)
+    newResponder.initialise(prologue)
+
+    result.hk = newResponder.s.publicKey.toString('hex')
+
+    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
+
+    this.responder = newResponder
 
     return {
       result,
@@ -117,32 +125,21 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  magiclink: async function ({ publicKey, token, nonce, signature }) {
-    // XXX decrypt
+  magiclink: async function (encryptedRequest) {
+    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
+    const { publicKey, token, nonce, signature } = payload
+
     this.sv.verify(signature, `${nonce}:${token}`, publicKey)
     this.verifyToken({ publicKey, token })
 
     const result = await this.magiclink(publicKey)
     result.nonce = nonce
 
-    const encrypted = this.enc.encrypt(Buffer.from(JSON.stringify(result))).toString('hex')
+    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
       result,
       encrypted,
-      signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
-    }
-  },
-
-  handshake: async function ({ publicKey, handshakeMessage, nonce, signature }) {
-    // XXX decrypt
-    this.sv.verify(signature, `${nonce}:${handshakeMessage}`, publicKey)
-
-    const result = await this.handshake(handshakeMessage, nonce)
-    result.nonce = nonce
-
-    return {
-      result,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
   }
@@ -176,6 +173,10 @@ class SlashAuthServer {
     this.keypair = opts.keypair
 
     this.tokenStorage = opts.storage || new Map()
+
+    this.responder = new Noise('IK', false)//, this.keypair)
+    this.responder.initialise(prologue)
+
     this.sv = opts.sv || sv
 
     this.rpc = {
@@ -193,8 +194,6 @@ class SlashAuthServer {
     }
 
     this.server = null
-
-    this.responder = new Noise('IK', false)//, this.keypair)
   }
 
   /**
@@ -253,18 +252,6 @@ class SlashAuthServer {
     await this.tokenStorage.delete(publicKey)
 
     if (storedToken !== token) throw new Error('invalid token')
-  }
-
-  async handshake (message, nonce) {
-    this.responder.initialise(Buffer.from('a')) // prologue === client set nonce?
-    this.responder.recv(Buffer.from(message, 'hex'))
-
-    const handshakeMessage = this.responder.send()
-
-    this.enc = new Cipher(this.responder.rx)
-    this.dec = new Cipher(this.responder.tx)
-
-    return { handshakeMessage: handshakeMessage.toString('hex') }
   }
 }
 

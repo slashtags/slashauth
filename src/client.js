@@ -65,10 +65,8 @@ class SlashAuthClient {
     this.serverPublicKey = opts.serverPublicKey
     this.sv = opts.sv || sv
 
-    this.initiator = new Noise('IK', true)
-
-    this.enc = null
-    this.dec = null
+//    this.enc = null
+//    this.dec = null
   }
 
   /**
@@ -85,7 +83,6 @@ class SlashAuthClient {
     if (!url) throw new Error('No url')
 
     const parsed = new URL(url)
-    await this.shakeHands(url)
 
     const token = parsed.searchParams.get('token')
     const params = this.createRequestParams({ token })
@@ -106,11 +103,18 @@ class SlashAuthClient {
   async magiclink (url) {
     if (!url) throw new Error('No url')
 
-    await this.shakeHands(url)
-    const { token } = await this.requestToken(url)
+    const { token, hk } = await this.requestToken(url)
+
+    const parsed = SlashtagsURL.parse(url)
+    const newUrl = SlashtagsURL.format(parsed.key, {
+      path: parsed.path,
+      query: `token=${parsed.query.token}&hk=${hk}&relay=${parsed.query.relay}`
+    })
+
     const params = this.createRequestParams({ token })
 
-    return this.sendRequest('magiclink', url, params)
+
+    return this.sendRequest('magiclink', newUrl, params)
   }
 
   /**
@@ -126,10 +130,8 @@ class SlashAuthClient {
   async requestToken (url) {
     if (!url) throw new Error('No url')
 
-    await this.shakeHands(url)
-    const params = this.createRequestParams({
-      publicKey: this.keypair.publicKey.toString('hex')
-    })
+    const publicKey = this.keypair.publicKey.toString('hex')
+    const params = this.createRequestParams({ publicKey })
 
     return this.sendRequest('requestToken', url, params)
   }
@@ -168,19 +170,21 @@ class SlashAuthClient {
    * @returns {object} response
    */
   async sendRequest (method, url, params) {
+    const initiator = new Noise('IK', true)
     const parsed = SlashtagsURL.parse(url)
 
-    // XXX: method can not be encrypted
+    initiator.initialise(prologue, Buffer.from(parsed.query.hk, 'hex'))
+    const payload = initiator.send(Buffer.from(JSON.stringify(params))).toString('hex')
+
     const res = await fetch(parsed.query.relay + parsed.path, {
       headers,
       method: 'POST',
-      // XXX encrypt params
-      body: JSON.stringify({ method, params })
+      body: JSON.stringify({ method, params: payload })
     })
 
     let body = await res.json()
-    if (this.dec) {
-      body.result.result = JSON.parse(this.dec.decrypt(body.result.encrypted).toString())
+    if (!body.error) {
+      body.result.result = JSON.parse(initiator.recv(Buffer.from(body.result.encrypted, 'hex')).toString())
     }
 
     return this.processResponse(body, params.nonce)
@@ -201,26 +205,6 @@ class SlashAuthClient {
       publicKey: this.keypair.publicKey.toString('hex'),
       signature
     }
-  }
-
-  async shakeHands (url) {
-    if (this.enc && this.dec) return
-
-    const parsed = SlashtagsURL.parse(url)
-
-    // XXX consider using nonce
-    this.initiator.initialise(Buffer.from('a'), Buffer.from(parsed.query.hk, 'hex'))
-
-    const handshakeMessage = this.initiator.send().toString('hex')
-    const params = await this.createRequestParams({ handshakeMessage })
-    const reply = await this.sendRequest('handshake', url, params)
-
-    this.initiator.recv(Buffer.from(reply.handshakeMessage, 'hex'))
-
-    if(!this.initiator.complete) throw new Error('Handshake failed')
-
-    this.enc = new Cipher(this.initiator.rx),
-    this.dec = new Cipher(this.initiator.tx)
   }
 }
 
