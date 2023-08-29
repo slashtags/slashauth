@@ -74,7 +74,6 @@ const handlersWrappers = {
     const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
-      result,
       encrypted,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
@@ -107,7 +106,6 @@ const handlersWrappers = {
     this.responder = newResponder
 
     return {
-      result,
       encrypted,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
@@ -135,7 +133,6 @@ const handlersWrappers = {
     const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
     return {
-      result,
       encrypted,
       signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
     }
@@ -201,6 +198,7 @@ class SlashAuthServer {
   formatUrl (token) {
     return SlashtagsURL.format(this.keypair.publicKey, {
       path: `/${this.rpc.version}/${this.rpc.route}`,
+      // FXIME: https
       query: `token=${token}&hk=${this.responder.s.publicKey.toString('hex')}&relay=http://${this.rpc.host}:${this.rpc.port}`
     })
   }
