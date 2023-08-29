@@ -139,7 +139,6 @@ class SlashAuthClient {
   /**
    * Process response
    * @param {object} body
-   * @param {string} nonce
    * @returns {object}
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
@@ -147,11 +146,10 @@ class SlashAuthClient {
    * @throws {Error} No result in response
    * @throws {Error} No url
    */
-  processResponse (body, nonce) {
+  processResponse (body) {
     if (body.error) throw new Error(body.error.message)
     if (!body.result.signature) throw new Error('No signature in response')
     if (!body.result.result) throw new Error('No result in response')
-    if (body.result.result.nonce !== nonce) throw new Error('Invalid nonce')
 
     this.sv.verify(
       body.result.signature,
@@ -187,7 +185,7 @@ class SlashAuthClient {
       body.result.result = JSON.parse(initiator.recv(Buffer.from(body.result.encrypted, 'hex')).toString())
     }
 
-    return this.processResponse(body, params.nonce)
+    return this.processResponse(body)
   }
 
   /**
@@ -196,12 +194,10 @@ class SlashAuthClient {
    * @returns {object}
    */
   createRequestParams (param = {}) {
-    const nonce = this.sv.createToken()
     const data = Object.values(param)[0]
-    const signature = this.sv.sign(`${nonce}:${data}`, this.keypair.secretKey)
+    const signature = this.sv.sign(`${data}`, this.keypair.secretKey)
     return {
       ...param,
-      nonce,
       publicKey: this.keypair.publicKey.toString('hex'),
       signature
     }

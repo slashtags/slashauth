@@ -66,11 +66,10 @@ const handlersWrappers = {
   authz: async function (encryptedRequest) {
     const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
 
-    const { publicKey, token, signature, nonce } = payload
-    this.sv.verify(signature, `${nonce}:${token}`, publicKey)
+    const { publicKey, token, signature } = payload
+    this.sv.verify(signature, `${token}`, publicKey)
 
     const result = await this.authz({ publicKey, token, signature })
-    result.nonce = nonce
 
     const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
@@ -92,11 +91,10 @@ const handlersWrappers = {
    */
   requestToken: async function (encryptedRequest) {
     const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey, nonce, signature } = payload
+    const { publicKey, signature } = payload
 
-    this.sv.verify(signature, `${nonce}:${publicKey}`, publicKey)
+    this.sv.verify(signature, `${publicKey}`, publicKey)
     const result = await this.requestToken(publicKey)
-    result.nonce = nonce
 
 
     const newResponder = new Noise('IK', false)//, this.keypair)
@@ -127,13 +125,12 @@ const handlersWrappers = {
    */
   magiclink: async function (encryptedRequest) {
     const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey, token, nonce, signature } = payload
+    const { publicKey, token, signature } = payload
 
-    this.sv.verify(signature, `${nonce}:${token}`, publicKey)
+    this.sv.verify(signature, `${token}`, publicKey)
     this.verifyToken({ publicKey, token })
 
     const result = await this.magiclink(publicKey)
-    result.nonce = nonce
 
     const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
 
