@@ -40,7 +40,6 @@ test('e2e server - az', async t => {
     serverPublicKey: serverKeyPair.publicKey
   })
 
-
   const magicLinkUrl = server.formatUrl('testtoken')
 
   const parsed = SlashtagsURL.parse(magicLinkUrl)

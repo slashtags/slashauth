@@ -1,6 +1,4 @@
 const { RPC } = require('slashtags-server')
-const { createToken } = require('./crypto.js')
-
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
 const endpointList = [
@@ -13,7 +11,7 @@ const endpointList = [
     name: 'magiclink',
     svc: 'SlashAuthServer.magiclink',
     description: 'Request a magic to be sent to the user'
-  },
+  }
 ]
 
 const handlersWrappers = {
@@ -24,7 +22,7 @@ const handlersWrappers = {
    * @param {string} params.token
    * @returns {object}
    */
-  authz: async function ({ publicKey, token}) {
+  authz: async function ({ publicKey, token }) {
     return await this.authz({ publicKey, token })
   },
 

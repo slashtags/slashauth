@@ -1,13 +1,4 @@
-const fetch = require('node-fetch')
-const SlashtagsURL = require('@synonymdev/slashtags-url')
-
-const Noise = require('noise-handshake')
-const Cipher = require('noise-handshake/cipher')
-const curve = require('noise-curve-ed')
-
-const prologue = Buffer.alloc(0)
-
-const headers = { 'Content-Type': 'application/json' }
+const { sendRequest } = require('slashtags-request')
 
 /**
  * SlashAuthClient
@@ -38,9 +29,15 @@ class SlashAuthClient {
 
     const parsed = new URL(url)
 
-    return this.sendRequest('authz', url, {
-      token: parsed.searchParams.get('token'),
-      publicKey: this.keypair.publicKey.toString('hex'),
+    return sendRequest({
+      method: 'authz',
+      url,
+      keypair: this.keypair,
+      serverPublicKey: this.serverPublicKey,
+      params: {
+        token: parsed.searchParams.get('token'),
+        publicKey: this.keypair.publicKey.toString('hex')
+      }
     })
   }
 
@@ -53,38 +50,16 @@ class SlashAuthClient {
   async magiclink (url) {
     if (!url) throw new Error('No url')
 
-    return this.sendRequest('magiclink', url, {
-      publicKey: this.keypair.publicKey.toString('hex'),
+    return sendRequest({
+      method: 'magiclink',
+      url,
+      keypair: this.keypair,
+      serverPublicKey: this.serverPublicKey,
+      params: {
+        publicKey: this.keypair.publicKey.toString('hex')
+      }
     })
-  }
-
-  /**
-   * Send request to server
-   * @param {string} method
-   * @param {string} url
-   * @param {object} params
-   * @returns {object} response
-   */
-  async sendRequest (method, url, params) {
-    const initiator = new Noise('IK', true, this.keypair, { curve })
-    const parsed = SlashtagsURL.parse(url)
-
-    initiator.initialise(prologue, this.serverPublicKey)
-    const payload = initiator.send(Buffer.from(JSON.stringify(params))).toString('hex')
-
-    const res = await fetch(parsed.query.relay + parsed.path, {
-      headers,
-      method: 'POST',
-      body: JSON.stringify({ method, params: payload })
-    })
-
-    let body = await res.json()
-    if (body.error) throw new Error(body.error.message)
-    if (!body.result) throw new Error('No result in response')
-
-    return JSON.parse(initiator.recv(Buffer.from(body.result, 'hex')).toString())
   }
 }
 
 module.exports = SlashAuthClient
-
