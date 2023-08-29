@@ -5,6 +5,7 @@ const SlashtagsURL = require('@synonymdev/slashtags-url')
 
 const Noise = require('noise-handshake')
 const Cipher = require('noise-handshake/cipher')
+const curve = require('noise-curve-ed')
 
 const prologue = Buffer.alloc(0) // prologue is just a well-known value.
 
@@ -19,11 +20,6 @@ const endpointList = [
     svc: 'SlashAuthServer.magiclink',
     description: 'Request a magic to be sent to the user'
   },
-  {
-    name: 'requestToken',
-    svc: 'SlashAuthServer.requestToken',
-    description: 'Requst a nonce associated with user\'s public key'
-  }
 ]
 
 const sv = {
@@ -80,38 +76,6 @@ const handlersWrappers = {
   },
 
   /**
-   * Request a magic to be sent to the user
-   * @param {object} params
-   * @param {string} params.publicKey
-   * @param {string} params.signature
-   * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
-   */
-  requestToken: async function (encryptedRequest) {
-    const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey, signature } = payload
-
-    this.sv.verify(signature, `${publicKey}`, publicKey)
-    const result = await this.requestToken(publicKey)
-
-
-    const newResponder = new Noise('IK', false)//, this.keypair)
-    newResponder.initialise(prologue)
-
-    result.hk = newResponder.s.publicKey.toString('hex')
-
-    const encrypted = this.responder.send(Buffer.from(JSON.stringify(result))).toString('hex')
-
-    this.responder = newResponder
-
-    return {
-      encrypted,
-      signature: this.sv.sign(JSON.stringify(result), this.keypair.secretKey)
-    }
-  },
-
-  /**
    * Requst a nonce associated with user's public key
    * @param {object} params
    * @param {string} params.publicKey
@@ -123,10 +87,9 @@ const handlersWrappers = {
    */
   magiclink: async function (encryptedRequest) {
     const payload = JSON.parse(this.responder.recv(Buffer.from(encryptedRequest, 'hex')).toString())
-    const { publicKey, token, signature } = payload
+    const { publicKey, signature } = payload
 
-    this.sv.verify(signature, `${token}`, publicKey)
-    this.verifyToken({ publicKey, token })
+    //this.sv.verify(signature, `${token}`, publicKey)
 
     const result = await this.magiclink(publicKey)
 
@@ -168,7 +131,7 @@ class SlashAuthServer {
 
     this.tokenStorage = opts.storage || new Map()
 
-    this.responder = new Noise('IK', false)//, this.keypair)
+    this.responder = new Noise('IK', false, this.keypair, { curve })
     this.responder.initialise(prologue)
 
     this.sv = opts.sv || sv
@@ -199,7 +162,7 @@ class SlashAuthServer {
     return SlashtagsURL.format(this.keypair.publicKey, {
       path: `/${this.rpc.version}/${this.rpc.route}`,
       // FXIME: https
-      query: `token=${token}&hk=${this.responder.s.publicKey.toString('hex')}&relay=http://${this.rpc.host}:${this.rpc.port}`
+      query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`
     })
   }
 
@@ -218,18 +181,6 @@ class SlashAuthServer {
    */
   async stop () {
     await this.server?.stop()
-  }
-
-  /**
-   * Get token by public key
-   * @param {string} publicKey
-   * @returns {string}
-   */
-  async requestToken (publicKey) {
-    const token = createToken()
-    await this.tokenStorage.set(publicKey, token)
-
-    return { token }
   }
 
   /**

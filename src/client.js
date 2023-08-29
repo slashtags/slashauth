@@ -3,6 +3,7 @@ const SlashtagsURL = require('@synonymdev/slashtags-url')
 
 const Noise = require('noise-handshake')
 const Cipher = require('noise-handshake/cipher')
+const curve = require('noise-curve-ed')
 
 const prologue = Buffer.alloc(0) // prologue is just a well-known value.
 
@@ -103,37 +104,9 @@ class SlashAuthClient {
   async magiclink (url) {
     if (!url) throw new Error('No url')
 
-    const { token, hk } = await this.requestToken(url)
+    const params = this.createRequestParams({ })
 
-    const parsed = SlashtagsURL.parse(url)
-    const newUrl = SlashtagsURL.format(parsed.key, {
-      path: parsed.path,
-      query: `token=${parsed.query.token}&hk=${hk}&relay=${parsed.query.relay}`
-    })
-
-    const params = this.createRequestParams({ token })
-
-
-    return this.sendRequest('magiclink', newUrl, params)
-  }
-
-  /**
-   * Request a token from the server
-   * @param {string} url
-   * @returns {object}
-   * @throws {Error} Invalid signature
-   * @throws {Error} Invalid token
-   * @throws {Error} No url
-   * @throws {Error} No signature in response
-   * @throws {Error} No result in response
-   */
-  async requestToken (url) {
-    if (!url) throw new Error('No url')
-
-    const publicKey = this.keypair.publicKey.toString('hex')
-    const params = this.createRequestParams({ publicKey })
-
-    return this.sendRequest('requestToken', url, params)
+    return this.sendRequest('magiclink', url, params)
   }
 
   /**
@@ -168,10 +141,11 @@ class SlashAuthClient {
    * @returns {object} response
    */
   async sendRequest (method, url, params) {
-    const initiator = new Noise('IK', true)
+    const initiator = new Noise('IK', true, this.keypair, { curve })
     const parsed = SlashtagsURL.parse(url)
 
-    initiator.initialise(prologue, Buffer.from(parsed.query.hk, 'hex'))
+    //initiator.initialise(prologue, Buffer.from(parsed.query.hk, 'hex'))
+    initiator.initialise(prologue, this.serverPublicKey)
     const payload = initiator.send(Buffer.from(JSON.stringify(params))).toString('hex')
 
     const res = await fetch(parsed.query.relay + parsed.path, {

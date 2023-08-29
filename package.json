@@ -30,6 +30,7 @@
   "dependencies": {
     "@synonymdev/slashtags-url": "^1.0.0-alpha.3",
     "node-fetch": "^2.6.13",
+    "noise-curve-ed": "^2.0.1",
     "noise-handshake": "^3.0.3",
     "slashtags-server": "github:slashtags/server",
     "sodium-universal": "^4.0.0"
