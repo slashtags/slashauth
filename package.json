@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/slashtags/slashauth#readme",
   "devDependencies": {
+    "@slashtags/slashauth-client": "github:slashtags/slashauth-client",
     "brittle": "^3.3.2",
     "standard": "^17.1.0",
     "typescript": "^5.1.6"

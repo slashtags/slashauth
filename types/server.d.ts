@@ -20,7 +20,7 @@ declare class SlashAuthServer {
     authz: any;
     magiclink: any;
     keypair: any;
-    tokens: any;
+    tokenStorage: any;
     sv: any;
     rpc: {
         port: any;

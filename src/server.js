@@ -56,10 +56,11 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  authz: async function ({ publicKey, token, signature }) {
-    this.sv.verify(signature, token, publicKey)
+  authz: async function ({ publicKey, token, signature, nonce }) {
+    this.sv.verify(signature, `${nonce}:${token}`, publicKey)
 
     const result = await this.authz({ publicKey, token, signature })
+    result.nonce = nonce
 
     return {
       result,
@@ -76,9 +77,10 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  requestToken: async function ({ publicKey, signature }) {
-    this.sv.verify(signature, publicKey, publicKey)
+  requestToken: async function ({ publicKey, nonce, signature }) {
+    this.sv.verify(signature, `${nonce}:${publicKey}`, publicKey)
     const result = await this.requestToken(publicKey)
+    result.nonce = nonce
 
     return {
       result,
@@ -96,11 +98,12 @@ const handlersWrappers = {
    * @throws {Error} Invalid signature
    * @throws {Error} Invalid token
    */
-  magiclink: async function ({ publicKey, token, signature }) {
-    this.sv.verify(signature, token, publicKey)
+  magiclink: async function ({ publicKey, token, nonce, signature }) {
+    this.sv.verify(signature, `${nonce}:${token}`, publicKey)
     this.verifyToken({ publicKey, token })
 
     const result = await this.magiclink(publicKey)
+    result.nonce = nonce
 
     return {
       result,
