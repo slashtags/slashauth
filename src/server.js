@@ -136,7 +136,7 @@ class SlashAuthServer {
 
     this.keypair = opts.keypair
 
-    this.tokens = opts.storage || new Map()
+    this.tokenStorage = opts.storage || new Map()
     this.sv = opts.sv || sv
 
     this.rpc = {
