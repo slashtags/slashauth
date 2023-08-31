@@ -13,7 +13,7 @@ npm install @slashtags/slashauth
 #### Server side
 
 ```js
-const { AuthServer, crypto } = require('@slashtags/slashauth')
+const { AuthServer } = require('@slashtags/slashauth')
 
 // create keyPair
 const keyPair = crypto.createKeyPair()
