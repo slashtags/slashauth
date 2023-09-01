@@ -3,13 +3,12 @@ const SlashtagsURL = require('@synonymdev/slashtags-url')
 const { SlashAuthClient } = require('@slashtags/slashauth-client')
 
 const { SlashAuthServer } = require('../index')
-const curve = require('noise-curve-ed')
-
-const serverKeyPair = curve.generateKeyPair()
-const clientKeyPair = curve.generateKeyPair()
 
 test('e2e server - az', async t => {
   t.plan(7)
+
+  const serverKeyPair = SlashAuthServer.generateKeyPair()
+  const clientKeyPair = SlashAuthServer.generateKeyPair()
 
   const authz = ({ publicKey, token }) => {
     t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
@@ -61,6 +60,9 @@ test('e2e server - az', async t => {
 test('e2e server - ml', async t => {
   t.plan(6)
 
+  const serverKeyPair = SlashAuthServer.generateKeyPair()
+  const clientKeyPair = SlashAuthServer.generateKeyPair()
+
   const authz = ({ publicKey, token }) => {
     return {
       status: 'ok',
@@ -108,6 +110,9 @@ test('e2e server - ml', async t => {
 
 test('e2e server - all', async t => {
   t.plan(7)
+
+  const serverKeyPair = SlashAuthServer.generateKeyPair()
+  const clientKeyPair = SlashAuthServer.generateKeyPair()
 
   const authz = ({ publicKey, token, signature }) => {
     t.is(publicKey, clientKeyPair.publicKey.toString('hex'))

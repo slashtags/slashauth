@@ -41,8 +41,8 @@ const handlersWrappers = {
  * SlashAuthServer
  * @param {object} opts
  * @param {object} opts.keypair - keypair
- * @param {string} opts.keypair.publicKey - public key
- * @param {string} opts.keypair.secretKey - secret key
+ * @param {string|buffer} opts.keypair.publicKey - public key
+ * @param {string|buffer} opts.keypair.secretKey - secret key
  * @param {function} opts.authz - authz function
  * @param {function} opts.magiclink - magiclink function
  * @param {number} [opts.port] - rpc port
@@ -106,6 +106,14 @@ class SlashAuthServer {
    */
   async stop () {
     await this.server?.stop()
+  }
+
+  /**
+   * Generate valid keypair
+   * @returns {object}
+   */
+  static generateKeyPair () {
+    return require('noise-curve-ed').generateKeyPair()
   }
 }
 
