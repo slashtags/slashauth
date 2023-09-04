@@ -28,8 +28,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "node-fetch": "^2.6.13",
-    "slashtags-server": "github:slashtags/server",
-    "sodium-universal": "^4.0.0"
+    "@synonymdev/slashtags-url": "^1.0.0-alpha.3",
+    "slashtags-server": "github:slashtags/server"
   }
 }
