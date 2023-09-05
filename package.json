@@ -1,5 +1,5 @@
 {
-  "name": "@slashtags/slashauth",
+  "name": "@slashtagsdev/slashauth",
   "version": "0.0.1",
   "description": "slashtags authentication",
   "main": "index.js",
