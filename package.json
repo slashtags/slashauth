@@ -29,6 +29,6 @@
   },
   "dependencies": {
     "@synonymdev/slashtags-url": "^1.0.0-alpha.3",
-    "slashtags-server": "github:slashtags/server"
+    "@slashtagsdev/slashtags-server": "github:slashtags/server"
   }
 }

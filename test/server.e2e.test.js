@@ -11,7 +11,7 @@ test('e2e server - az', async t => {
   const clientKeyPair = SlashAuthServer.generateKeyPair()
 
   const authz = ({ publicKey, token }) => {
-    t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
+    t.alike(publicKey, clientKeyPair.publicKey)
     t.is(token, 'testtoken')
 
     return {
@@ -71,7 +71,7 @@ test('e2e server - ml', async t => {
   }
 
   const magiclink = (publicKey) => {
-    t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
+    t.alike(publicKey, clientKeyPair.publicKey)
 
     return {
       status: 'ok',
@@ -115,7 +115,7 @@ test('e2e server - all', async t => {
   const clientKeyPair = SlashAuthServer.generateKeyPair()
 
   const authz = ({ publicKey, token, signature }) => {
-    t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
+    t.alike(publicKey, clientKeyPair.publicKey)
     t.is(token, 'testtoken')
 
     return {
@@ -125,7 +125,7 @@ test('e2e server - all', async t => {
   }
 
   const magiclink = (publicKey) => {
-    t.is(publicKey, clientKeyPair.publicKey.toString('hex'))
+    t.alike(publicKey, clientKeyPair.publicKey)
 
     return {
       status: 'ok',
