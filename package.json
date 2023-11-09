@@ -28,7 +28,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@synonymdev/slashtags-url": "^1.0.0-alpha.3",
-    "@slashtagsdev/slashtags-server": "github:slashtags/server"
+    "@slashtagsdev/slashtags-server": "github:slashtags/server",
+    "@synonymdev/slashtags-url": "^1.0.0-alpha.3"
   }
 }
