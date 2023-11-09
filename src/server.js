@@ -1,4 +1,4 @@
-const { RPC } = require('slashtags-server')
+const { RPC } = require('@slashtagsdev/slashtags-server')
 const SlashtagsURL = require('@synonymdev/slashtags-url')
 
 const endpointList = [
