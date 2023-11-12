@@ -87,7 +87,8 @@ class SlashAuthServer {
   formatUrl (token) {
     return SlashtagsURL.format(this.keypair.publicKey, {
       path: `/${this.rpc.version}/${this.rpc.route}`,
-      query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`
+      query: `token=${token}&relay=http://${this.rpc.host}:${this.rpc.port}`,
+      protocol: 'slashauth:'
     })
   }
 
