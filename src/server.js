@@ -63,7 +63,7 @@ class SlashAuthServer {
     this.keypair = opts.keypair
 
     this.rpc = {
-      port: opts.port || 8000,
+      port: opts.port === null ? "" : opts.port || 8000,
       host: opts.host || 'localhost',
       route: opts.route || 'auth',
       version: opts.version || 'v0.1',
